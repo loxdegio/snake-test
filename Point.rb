@@ -25,8 +25,18 @@ class Point
   end
   
   def move(maxX = 0, maxY = 0)
-    @x+=@dx%maxX
-    @y+=@dy%maxY
+    @x+=@dx
+    if @x < 0
+      @x=maxX-1
+    else
+      @x=@x%maxX
+    end
+    @y+=@dy
+    if @y < 0
+      @y=maxX-1
+    else
+      @y=@y%maxX
+    end
   end
   
 end
