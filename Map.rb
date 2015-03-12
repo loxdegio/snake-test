@@ -4,31 +4,38 @@ include Snake
 include Thread
 
 class Map
-  def initialize
-    @@maxX=640
-    @@maxY=480
+  def initialize(x,y)
+    super
+    
+    init(640,480)
+  end
+  
+  def init_map(maxX,maxY)
+    @maxX=maxX
+    @maxY=maxY
     @mGrid=Array.new(@@maxX)
     @mGrid.each do |row|
       row=Array.new(@@maxY)
     end
     @mThreads = [ "map"       => Thread.new { thread_map },
                   "movement"  => Thread.new { thread_move }] 
-    @mSnake=Snake.new(@@maxX,@@maxY)
+    @mSnake=Snake.new(@maxX,@maxY)
     @mFruitsPresent = 0
     @mFruits=[]
     @mHeader=nil
     @mScore=0
-    @mMutex= [ "grid"   => Mutex.new,
-               "header" => Mutex.new,
-               "map"    => Mutex.new, 
+    @mMutex= [ "fruit"  => Mutex.new,
+               "map"   => Mutex.new,
+               "header" => Mutex.new, 
                "score"  => Mutex.new,               
                "snake"  => Mutex.new ]
-    @mLegend="Legenda:  SNAKE = *   FRUIT = #"
+    @mLegend="Legenda:  SNAKE = *   FRUTTA = #"
     i=0
-    while i<609
+    while i<@@maxX-@Legend.length
       @mLegend+=" "
       i+=1
     end
+    @mLegend+="\n"
   end
   
   def draw_map
@@ -38,9 +45,11 @@ class Map
     @mMutex["snake"].synchronize {
       draw_snake
     }
-    if @mFruitsPresent != 0
-      draw_fruits
-    end
+    @mMutex["fruit"].synchronize {
+      if @mFruitsPresent != 0
+        draw_fruits
+      end
+    }
     puts @mLegend
   end
   
@@ -92,29 +101,22 @@ class Map
   end 
   
   def draw_snake
-    @mMutex["snake"].synchronize {
       @mSnake.getPosition().each do |pos|
-        @mMutex["grid"].synchronize {
-          @mGrid[pos[0]][pos[1]]="*"
-        }
+        @mGrid[pos[0]][pos[1]]="*"
       end
-    }
   end
   
   def draw_fruit
-    @mFruits.each do |f|
-      pos=f.getPosition()
-      @mMutex["grid"].synchronize {
+      @mFruits.each do |f|
+        pos=f.getPosition()
         @mGrid[pos[0]][pos[1]]="#"
-      }
-    end
+      end
   end
   
   def print_map
     @mMutex["score"].synchronize() {
       puts @mScore
     }
-    @mMutex["grid"].synchronize() {
       @Grid.each do |row|
         r = String.new()
         row.each do |e|
@@ -127,7 +129,6 @@ class Map
         end
         puts "#{r}\n"    
       end
-    }
   end
   
   def thread_map
@@ -143,12 +144,33 @@ class Map
   
   def thread_move
     loop do
-      @mMutex["snake"].synchronize {
-        @mSnake.move(@@maxX,@@maxY)
+      @Mutex["fruit"].synchronize {
+        if @mFruitsPresent > 0
+          @mFruits.each do |f|
+            @mMutex["snake"].synchronize {
+              @mSnake.move(@@maxX,@@maxY)
+              h = @mSnake.getHeadPosition
+            }
+            p = f.getPosition
+            if ( h[0] == p[0] ) && ( h[1] == p[1] )
+              @mMutex[ "score" ].synchronize {
+                @mScore+=5
+              }
+              return
+            end
+          end
+        end
       }
       @mMutex[ "score" ].synchronize {
-        @mScore+=1
+        @mScore+=5
       }
-    end
   end
+  
+  private init_map
+  private draw_map
+  private draw_header
+  private draw_snake
+  private draw_fruit
+  private thread_map
+  private thread_move
 end

@@ -63,10 +63,10 @@ class Snake
   end
   
   def getPosition
-    pos=Array(@length)
+    pos=[]
     i=0
     for j in @points.each do
-      pos[i]=j.getPosition()
+      pos[i] << j.getPosition()
       i+=1
     end
     return pos
