@@ -69,6 +69,7 @@ class Snake
       pos[i]=j.getPosition()
       i+=1
     end
+    return pos
   end
   
   private extendSnake  
