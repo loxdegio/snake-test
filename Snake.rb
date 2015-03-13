@@ -1,4 +1,4 @@
-include Point
+require './Point'
 
 class Snake
   def initialize(maxX = 0, maxY = 0)
@@ -15,7 +15,7 @@ class Snake
   def setNextMove(dx = 0, dy = 0)
     update()
     @points[0].dx=dx
-    @points[1].dx=dy
+    @points[0].dy=dy
   end  
   
   def setDirection(dir = 0)
@@ -63,10 +63,10 @@ class Snake
   end
   
   def getPosition
-    pos=[]
+    pos= Hash.new
     i=0
     for j in @points.each do
-      pos[i] << j.getPosition()
+      pos[i] = j.getPosition()
       i+=1
     end
     return pos

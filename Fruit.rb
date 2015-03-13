@@ -1,4 +1,4 @@
-include Point
+require './Point'
 
 class Fruit
   def initialize(x = 0, y = 0)
