@@ -6,19 +6,19 @@ class Point
     @dy=0
   end
   
-  def getPosition
+  def get_position
     point=Array.new(2)
     point[0]=@x
     point[1]=@y
     return point
   end
   
-  def setNextMove(dx = 0, dy = 0)
+  def set_next_move(dx = 0, dy = 0)
     @dx=dx
     @dy=dy
   end
   
-  def getNextMove
+  def get_next_move
     move=Array.new(2)
     move[0]=@dx
     move[1]=@dy

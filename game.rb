@@ -1,7 +1,9 @@
 #!/usr/bin/ruby
 
-require 'map'
+require './map'
 
 game = Map.new
 
-Map.map_release
+game.set_resolution(640,480)
+
+game.map_release
