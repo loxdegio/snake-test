@@ -1,16 +1,17 @@
 class Point
   def initialize(x = 0, y = 0)
-    @x=x
-    @y=y
-    @dx=-1
-    @dy=0
+    @x  = x
+    @y  = y
+    @dx = -1
+    @dy = 0
   end
   
-  def get_position
-    point=Array.new(2)
-    point[0]=@x
-    point[1]=@y
-    return point
+  def get_x
+    return @x
+  end
+  
+  def get_y
+    return @y
   end
   
   def set_next_move(dx = 0, dy = 0)
@@ -33,9 +34,9 @@ class Point
     end
     @y+=@dy
     if @y < 0
-      @y=maxX-1
+      @y=maxY-1
     else
-      @y=@y%maxX
+      @y=@y%maxY
     end
   end
   

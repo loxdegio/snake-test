@@ -1,9 +1,11 @@
 #!/usr/bin/ruby
 
+require "io/console"
+require 'thread'
 require './map'
-
-game = Map.new
-
-game.set_resolution(640,480)
+  
+r, c = IO.console.winsize
+  
+game = Map.new( c, r-3 )
 
 game.map_release

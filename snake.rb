@@ -5,10 +5,12 @@ class Snake
     @@maxLength = 1024
     @length=3
     @points=Array.new(@length)
-    i=0;
-    while i<@length do
-      @points[i] = Point.new(maxX/2-i,maxY/2-i)
-      i+=1      
+    i = 0
+    y = maxY/2
+    while i<@length
+      x = (maxX/2)-i;
+      @points[i] = Point.new(x,y)
+      i+=1
     end
   end
   
@@ -45,39 +47,35 @@ class Snake
   end
   
   def get_head_position
-    return @points[0].get_position
+    return @points[0]
   end
   
   def get_position
-    pos= Array.new(@length) { Array.new(2) }
-    i=0
-    @points.each do |p|
-      pos[i] = p.get_position
-      i+=1
-    end
-    return pos
+    return @points
   end
   
   private 
     def extend_snake
+      rc = false
       l=@length
       @length+=1
       if length == @@maxLength
-        return true
+        rc = true
+      else
+        p=Array.new(@length)
+        i=0
+        while i<l do
+          p[i] = @points[i]
+          i+=1
+        end
+        @points=p
+        pos=@points[l-1].get_position
+        @points[l]=Point.new(pos[0]-1,pos[1]-1)
+        move=@points[l-1].get_next_move()
+        @points[l].set_next_move(move[0],move[1])
+        @length+=1
       end
-      p=Array.new(@length)
-      i=0
-      while i<l do
-        p[i] = @points[i]
-        i+=1
-      end
-      @points=p
-      pos=@points[l-1].get_position
-      @points[l]=Point.new(pos[0]-1,pos[1]-1)
-      move=@points[l-1].get_next_move()
-      @points[l].set_next_move(move[0],move[1])
-      @length+=1
-      return false
+      return rc
     end
 
     def set_next_move(dx = 0, dy = 0)

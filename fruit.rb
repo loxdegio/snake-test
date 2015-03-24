@@ -9,4 +9,12 @@ class Fruit
     return @position.get_position()
   end
   
+  def get_x
+    return @position.get_x
+  end
+  
+  def get_y
+    return @position.get_y
+  end
+  
 end

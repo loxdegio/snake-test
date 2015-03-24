@@ -1,3 +1,4 @@
+require  'io/wait'
 require  'thread'
 
 require './fruit'
@@ -5,15 +6,20 @@ require './snake'
 
 class Map
   
-    def initialize
-      super
-    
-      init_map
-    end
-  
-    def set_resolution(x=640, y=480)
-      @maxX=x
-      @maxY=y
+    def initialize(maxX = 0, maxY = 0)    
+      @maxX=maxX
+      @maxY=maxY
+      @speed=0.5
+      @mSnake=Snake.new(@maxX,@maxY)
+      @mFruitsPresent = 0
+      @mFruits=[]
+      @mScore=0
+      @mDir=0
+      @mLegend = String.new("Legenda:  SNAKE = *   FRUTTA = #")
+      @mMutex= Mutex.new
+      @mThreads = { "map"       =>  Thread.new { thread_map  },
+                    "movement"  =>  Thread.new { thread_move },
+                    "turn"      =>  Thread.new { thread_turn }}
     end
     
     def map_release
@@ -24,176 +30,151 @@ class Map
   
   private
   
-  def init_map
-    @maxX=640
-    @maxY=480
-    @mGrid = Array.new(@maxY) { Array.new(@maxX) }
-    @mSnake=Snake.new(@maxX,@maxY)
-    @mFruitsPresent = 0
-    @mFruits=[]
-    @mHeader=nil
-    @mScore=0
-    @mLegend=String.new 
-    @mMutex= { "fruit"  => Mutex.new,
-               "map"   => Mutex.new,
-               "header" => Mutex.new, 
-               "score"  => Mutex.new,               
-               "snake"  => Mutex.new  }
-    @mThreads = { "map"       => Thread.new { thread_map },
-                  "movement"  => Thread.new { thread_move } }
-  end
-  
-  def write_legend
-    @mLegend="Legenda:  SNAKE = *   FRUTTA = #"
-    i=0
-    while i<@@maxX-@Legend.length do
-      @mLegend+=" "
-      i+=1
+  def print_header
+    rc = false;
+    s = @mScore
+    if @mScore < 999999999
+      score = String.new("SCORE ".+(s.to_s))
+      puts score
+    else
+      system "clear"
+      puts "YOU WIN!"
+      rc = true
     end
-    @mLegend+="\n"
-  end
-  
-  def draw_map
-    draw_header
-    @mMutex["snake"].synchronize {
-      draw_snake
-    }
-    @mMutex["fruit"].synchronize {
-      if @mFruitsPresent != 0
-        draw_fruits
-      end
-    }
-    puts @mLegend
-  end
-  
-  def draw_header
-    score = String.new
-    i=0
-    while i<625 do
-      score.+(" ")
-      i+=1
-    end
-    score.+("SCORE ")
-    s=0
-    @mMutex["score"].synchronize {
-      s = @mScore
-    }
-    if s >= 0 && s < 10
-      l = 8
-    elsif s >= 10 && s < 100
-      l = 7 
-    else if s >= 100 && s < 1000
-      l = 6
-    elsif s >= 1000 && s < 10000
-      l = 5
-    elsif s >= 10000 && s < 100000
-      l = 4
-    elsif s >= 100000 && s < 1000000
-      l = 3
-    elsif s >= 1000000 && s < 10000000
-      l = 2
-    elsif s >= 1000000 && s < 10000000
-      l = 1
-    elsif s >= 999999999
-      system("clear")
-      puts "YOU WIN!!"
-      wait 30
-      return true
-    end
-    
-    if l > 0
-      i=0
-      while i<l do
-        score.+("0")
-        i+=1
-      end
-      end
-    end
-    score.+(s.to_s)
-    @mMutex["header"].synchronize {
-      @mHeader=score
-    }
-    return false
+    return rc
   end 
   
-  def draw_snake
-    pos=@mSnake.get_position
-    pos.each do |p|
-      @mMutex["map"].synchronize {
-        @mGrid[p[1]][p[0]] = String.new("*")
-      }
+  def draw_snake(x=0,y=0)
+    @mSnake.get_position.each do |p|
+      if ( p.get_x == x && p.get_y == y )
+        return true
+      end  
     end
+    return false
   end
   
-  def draw_fruit
-      @mFruits.each do |f|
-        pos=f.get_position  
-        @mMutex["map"].synchronize {
-          @mGrid[pos[1]][pos[0]] = String.new("#")
-        }
+  def draw_fruit(x=0,y=0)
+      rc = false;
+      if @mFruitsPresent > 0
+        @mFruits.each do |f|
+          if ( f.get_x == x && f.get_y == y )
+            return true
+          end
+        end
       end
+      return false
   end
   
   def print_map
-    e = String.new
-    @mMutex["score"].synchronize {
-      puts @mScore
-    }
-    i=0; j=0
-    while i<@maxX
-      while j<@maxY do
-        r = String.new  
-          @mMutex["map"].synchronize {
-            if @mGrid[i][j] == nil
-              r.+(" ")
-            else
-              r.+(@mGrid[i][j])
-            end
-          }
+    print_header
+    i=0
+    while i<@maxY
+      j=0
+      while j<@maxX        
+        if draw_snake(j,i)==true
+          while draw_snake(j,i)==true
+            print "*"
+            j+=1
+          end 
+        else
+          if draw_fruit(j,i)==true
+            print "#"
+          else
+            print " "
+          end
+        end
       j+=1
       end
-    i+=1  
+      print "\n"
+      i+=1
     end
-    puts "#{r}\n"   
+    puts @mLegend   
   end
   
   def thread_map
     loop do
       system("clear")
-      draw_map
-      print_map
-      sleep(1)
+      @mMutex.synchronize {
+        print_map
+      }
+      sleep(@speed)
     end
+  end
+  
+  def fruit_eaten
+    @mFruitsPresent-=1
+    @mFruits[@mFruitsPresent]=nil
   end
   
   def thread_move
     loop do
-      @Mutex["score"].synchronize {
-         lastScore = @mScore
-      }
-      @Mutex["fruit"].synchronize {
+      @mMutex.synchronize {
+        lastScore = @mScore
+        @mSnake.move(@maxX,@maxY)
         if @mFruitsPresent > 0
           @mFruits.each do |f|
-            @mMutex["snake"].synchronize {
-              @mSnake.move(@maxX,@maxY)
-              h = @mSnake.get_head_position
-            }
-            p = f.get_position
-            e = ( h.first == p.first ) && ( h.last == p.last )
-            if e
-              @mMutex[ "score" ].synchronize {
-                @mScore+=5
-              }
+            h = @mSnake.get_head_position
+            if h.get_x == f.get_x && h.gety == p.get_y
+              @mSnake.eat_fruit
+              fruit_eaten(j,i)
+              @mScore+=5  
               break
             end
           end
         end
-      }
-      unless (@mScore - lastScore) == 5
-        @mMutex[ "score" ].synchronize {
+        unless (@mScore - lastScore) == 5
           @mScore+=1
-        }
-      end
+        end
+      } 
+      sleep(@speed) 
     end
   end
+  
+  def set_dir(arr = "a")
+    d = @mDir
+    case arr
+      when "a"
+        if d == "w" || d == "s"
+          @mDir = 0
+        end
+      when "w"
+        if d == "a" || d == "d"
+          @mDir = 1
+        end
+      when "d"
+        if d == "w" || d == "s"
+          @mDir = 2
+        end
+      when "s"
+        if d == "a" || d == "d"
+          @mDir = 3
+        end
+      when "x"
+        exit(0)
+      else
+        @mDir = 0
+    end
+  end
+  
+  def char_if_pressed
+    begin
+      system("stty raw -echo") # turn raw input on
+      c = nil
+      if $stdin.ready?
+        c = $stdin.getc
+      end
+      c.chr if c
+    ensure
+      system "stty -raw echo" # turn raw input off
+    end
+  end
+  
+  def thread_turn
+    loop do
+      arr = char_if_pressed
+      set_dir(arr)
+      @mSnake.set_direction(@mDir)
+    end
+  end
+  
 end
