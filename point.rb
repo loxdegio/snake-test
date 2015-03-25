@@ -1,9 +1,9 @@
 class Point
-  def initialize(x = 0, y = 0)
+  def initialize(x = 0, y = 0, dx = -1, dy = 0)
     @x  = x
     @y  = y
-    @dx = -1
-    @dy = 0
+    @dx = dx
+    @dy = dy
   end
   
   def get_x
@@ -27,6 +27,10 @@ class Point
     @dy=dy
   end
   
+  def teleport(x = 0, y = 0)
+    @x=x; @y=y
+  end
+  
   def move(maxX = 0, maxY = 0)
     @x+=@dx
     if @x < 0
@@ -35,7 +39,7 @@ class Point
       @x=@x%maxX
     end
     @y+=@dy
-    if @y < 0
+    if @y < 1
       @y=maxY-1
     else
       @y=@y%maxY

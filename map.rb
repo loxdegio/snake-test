@@ -14,16 +14,15 @@ class Map
       @mMaxY = Curses.lines
       @mWindow = Window.new(@mMaxY, @mMaxX, 0, 0)
       clear_win   
-      @speed=0.5
+      @speed=0.1
       @mSnake=Snake.new(@mMaxX,@mMaxY-1)
-      @mFruitsPresent = 0
-      @mFruits=[]
+      @mFruitsPresent = 1
+      @mFruits= [ Fruit.new(rand(@mMaxX),rand(@mMaxY-1)) ]
       @mScore=0
       @mDir=0
-      @mLegend = String.new("Legenda:  SNAKE = *   FRUTTA = #\n")
+      @mLegend = String.new("Legenda:  SNAKE = *   FRUTTA = #   MOVES: W = up  S = down  A = left  D = right")
       @mMutex= Mutex.new
       @mThreads = { "map"       =>  Thread.new { thread_map  },
-                    "movement"  =>  Thread.new { thread_move },
                     "turn"      =>  Thread.new { thread_turn } }
                       
       @mEnd = false
@@ -42,13 +41,18 @@ class Map
   
   private
   
-  def exit_snake(end_reason)
-    Thread.kill(@mThreads["map"])
+  def exit_snake(end_reason = "Exit",thread = "map")
     clear_win
     @mWindow.box("|", "-") # border
     @mWindow.setpos(4, 4)
     @mWindow.addstr(end_reason)
-    sleep(3)
+    @mThreads.each do |k,t|
+      unless k == thread
+        Thread.kill(t)
+        t.join
+      end
+    end
+    sleep(5)
     @mEnd = true
   end
   
@@ -58,7 +62,7 @@ class Map
       score = String.new("SCORE ".+(s.to_s))
       score
     else
-      exit_snake("YOU WIN!")
+      exit_snake("YOU WIN!","map")
     end
   end 
   
@@ -89,12 +93,11 @@ class Map
     i=1
     while i<@mMaxY-1
       j=0
-      while j<@mMaxX        
+      while j<@mMaxX
+        @mWindow.setpos(i,j)        
         if draw_snake(j,i)==true
-          @mWindow.setpos(i,j)
-          @mWindow.addstr("*")
+            @mWindow.addstr("*")
         elsif draw_fruit(j,i)==true
-          @mWindow.setpos(i,j)
           @mWindow.addstr("#")
         end
       j+=1
@@ -102,7 +105,7 @@ class Map
       i+=1
     end
     @mWindow.setpos(@mMaxY-1,0)
-    @mWindow.addstr(@mLegend)       
+    @mWindow.addstr(@mLegend)    
   end
   
   def clear_win
@@ -115,63 +118,83 @@ class Map
       clear_win
       @mMutex.synchronize {
         print_map
+        move
       }
       sleep(@speed)
     end
   end
   
-  def fruit_eaten
-    @mFruitsPresent-=1
-    @mFruits[@mFruitsPresent]=nil
+  def fruit_eaten(x = 0, y = 0)
+    @mFruits.each do |f|
+      if f.get_x == x && f.get_y == y
+        f.teleport(rand(@mMaxX),rand(@mMaxY-2)+1)
+      end  
+    end
   end
   
-  def thread_move
-    loop do
-      @mMutex.synchronize {
+  def move
         lastScore = @mScore
         @mSnake.move(@mMaxX,@mMaxY-1)
         if @mFruitsPresent > 0
           @mFruits.each do |f|
             h = @mSnake.get_head_position
-            if h.get_x == f.get_x && h.gety == p.get_y
-              @mSnake.eat_fruit
-              fruit_eaten(j,i)
+            if h.get_x == f.get_x && h.get_y == f.get_y
+              if @mSnake.eat_fruit
+                exit_snake("YOU WIN!","movement")
+              end
+              fruit_eaten(f.get_x,f.get_y)
               @mScore+=5  
               break
             end
           end
+        elsif @mSnake.collision
+          exit_snake("YOU LOSE!","movement") 
         end
         unless (@mScore - lastScore) == 5
           @mScore+=1
         end
-      } 
-      sleep(@speed) 
-    end
   end
   
   def set_dir
     d = @mDir
-    c = Curses.getch
-    case c
+    changed = false
+    e1 = (d == 1 || d == 3)
+    e2 = (d == 0 || d == 2)
+    case Curses.getch
       when 'a'
-        @mDir = 0
+        if e1
+          @mDir = 0
+          changed = true
+        end
       when 'w'
-        @mDir = 1
+        if e2
+          @mDir = 1
+          changed = true
+        end
       when 'd'
-        @mDir = 2
+        if e1  
+          @mDir = 2
+          changed = true
+        end
       when 's'
-        @mDir = 3
+        if e2
+          @mDir = 3
+          changed = true
+        end
       when 'q'
-        exit_snake("You press (Q)uit button")
+        exit_snake("You press (Q)uit button","turn")
     end
+    changed
   end
   
   def thread_turn
     loop do
-      set_dir
       @mMutex.synchronize {
-        @mSnake.set_direction(@mDir)
+        if set_dir
+          @mSnake.set_direction(@mDir)
+        end
       }
+      sleep(@speed)
     end
   end
   

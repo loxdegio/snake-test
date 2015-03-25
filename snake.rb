@@ -9,7 +9,7 @@ class Snake
     y = maxY/2
     while i<@length
       x = (maxX/2)-i;
-      @points[i] = Point.new(x,y)
+      @points[i] = Point.new(x,y,-1,0)
       i+=1
     end
   end
@@ -30,8 +30,7 @@ class Snake
   def update
     i = 0;
     while i < @length-1
-      dx=@points[i+1].get_dx; dy=@points[i+1].get_dy
-      @points[i].set_next_move(dx,dy)
+      @points[i].set_next_move(@points[i+1].get_dx,@points[i+1].get_dy)
       i+=1
     end
   end
@@ -55,12 +54,24 @@ class Snake
     return @points
   end
   
+  def collision
+    l = @length-1
+    i = 0
+    while i<l
+      if @points[i].get_x == @points[l].get_x && @points[i].get_y == @points[l].get_y
+        return true
+        break
+      end
+    end
+    return false
+  end
+  
   private 
     def extend_snake
       rc = false
       l=@length
       @length+=1
-      if length == @@maxLength
+      if l == @@maxLength
         rc = true
       else
         p=Array.new(@length)
@@ -70,14 +81,12 @@ class Snake
           i+=1
         end
         @points=p
-        @points[l]=Point.new(@points[l-1].get_x-1,@points[l-1].get_y-1)
-        update
+        @points[l]=Point.new(@points[l-1].get_x+@points[l-1].get_dx,@points[l-1].get_y+@points[l-1].get_dy,@points[l-1].get_dx,@points[l-1].get_dy)
       end
       return rc
     end
 
     def set_next_move(dx = 0, dy = 0)
-      update
       @points[@length-1].set_next_move(dx,dy)
     end  
 end

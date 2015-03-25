@@ -17,4 +17,8 @@ class Fruit
     return @position.get_y
   end
   
+  def teleport(x = 0, y = 0)
+    @position.teleport(x,y)
+  end
+  
 end
