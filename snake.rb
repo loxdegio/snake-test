@@ -28,18 +28,19 @@ class Snake
   end
     
   def update
-    i = @length-1;
-    while i >= 1 do
-      nm=@points[i-1].get_next_move()
-      @points[i].set_next_move(nm[0],nm[1])
-      i-=1
+    i = 0;
+    while i < @length-1
+      dx=@points[i+1].get_dx; dy=@points[i+1].get_dy
+      @points[i].set_next_move(dx,dy)
+      i+=1
     end
   end
   
   def move(maxX = 0, maxY = 0)
-    for i in @points.each do
+    @points.each do |i|
       i.move(maxX,maxY)
     end
+    update
   end 
     
   def eat_fruit
@@ -69,18 +70,14 @@ class Snake
           i+=1
         end
         @points=p
-        pos=@points[l-1].get_position
-        @points[l]=Point.new(pos[0]-1,pos[1]-1)
-        move=@points[l-1].get_next_move()
-        @points[l].set_next_move(move[0],move[1])
-        @length+=1
+        @points[l]=Point.new(@points[l-1].get_x-1,@points[l-1].get_y-1)
+        update
       end
       return rc
     end
 
     def set_next_move(dx = 0, dy = 0)
-      update()
-      @points[0].dx=dx
-      @points[0].dy=dy
+      update
+      @points[@length-1].set_next_move(dx,dy)
     end  
 end

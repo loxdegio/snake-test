@@ -14,15 +14,17 @@ class Point
     return @y
   end
   
+  def get_dx
+    return @dx
+  end
+    
+  def get_dy
+    return @dy
+  end
+  
   def set_next_move(dx = 0, dy = 0)
     @dx=dx
     @dy=dy
-  end
-  
-  def get_next_move
-    move=Array.new(2)
-    move[0]=@dx
-    move[1]=@dy
   end
   
   def move(maxX = 0, maxY = 0)

@@ -1,0 +1,4 @@
+eclipse.preferences.version=1
+enable_logging=false
+log_file_name=org.eclipse.dltk.core.environment.localEnvironment/\:/usr/bin/ruby -rdebug
+log_file_path=
