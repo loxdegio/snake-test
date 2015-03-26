@@ -72,6 +72,7 @@ class Map
       i+=1
       sleep(@speed)
     end
+    sleep(4.2)
     @mEnd = true
     exit
   end
@@ -140,7 +141,7 @@ class Map
         print_map
         move
       }
-      sleep(@speed/100)
+      sleep(@speed)
     end
   end
   
@@ -225,7 +226,7 @@ class Map
           @mSnake.set_direction(@mDir)
         end
       }
-      sleep(@speed/100)
+      sleep(@speed)
     end
   end
   
