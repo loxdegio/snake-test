@@ -3,7 +3,7 @@ require './point'
 class Snake
   def initialize(maxX = 0, maxY = 0)
     @@maxLength = 1024
-    @length=3
+    @length=5
     @points=Array.new(@length)
     i = 0
     y = maxY/2
@@ -62,6 +62,7 @@ class Snake
         return true
         break
       end
+      i+=1
     end
     return false
   end

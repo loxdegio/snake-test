@@ -17,15 +17,19 @@ class Map
       @speed=0.1
       @mSnake=Snake.new(@mMaxX,@mMaxY-1)
       @mFruitsPresent = 1
+      srand
       @mFruits= [ Fruit.new(rand(@mMaxX),rand(@mMaxY-1)) ]
       @mScore=0
       @mDir=0
       @mLegend = String.new("Legenda:  SNAKE = *   FRUTTA = #   MOVES: W = up  S = down  A = left  D = right")
       @mMutex= Mutex.new
       @mThreads = { "map"       =>  Thread.new { thread_map  },
-                    "turn"      =>  Thread.new { thread_turn } }
+                    "turn"      =>  Thread.new { thread_turn },
+                    "pause"     =>          nil               ,
+                    "exit"      =>          nil                }
                       
       @mEnd = false
+      @paused = false
     end
     
   def end
@@ -34,26 +38,42 @@ class Map
   
   def map_release
     @mThreads.each do |k,t|
-      Thread.kill(t)
-      t.join
+      unless t == nil
+        Thread.kill(t)
+        t.join
+      end
     end
   end
   
   private
   
   def exit_snake(end_reason = "Exit",thread = "map")
-    clear_win
-    @mWindow.box("|", "-") # border
-    @mWindow.setpos(4, 4)
-    @mWindow.addstr(end_reason)
     @mThreads.each do |k,t|
-      unless k == thread
+      unless k == thread || t == nil
         Thread.kill(t)
-        t.join
       end
     end
-    sleep(5)
+    @mThreads["exit"] = Thread.new(end_reason){ |msg| thread_exit(msg) }
+    @mThreads[thread].kill
+  end
+  
+  def thread_exit(end_reason)
+    i=0
+    while i<8
+      clear_win
+      @mWindow.box("|", "-") # border
+      cy=(@mMaxY/2).to_i; cx=(@mMaxX/2).to_i; cx-=(end_reason.length/2).to_i; cx-=1
+      @mWindow.setpos(cy-1,cx)
+      @mWindow.addstr(end_reason)
+      msg = "Exiting"
+      cx=(@mMaxX/2).to_i; cx-=(msg.length/2).to_i; cx-=1
+      @mWindow.setpos(cy+1,cx)
+      @mWindow.addstr(msg.+("..."))
+      i+=1
+      sleep(@speed)
+    end
     @mEnd = true
+    exit
   end
   
   def print_header
@@ -96,7 +116,7 @@ class Map
       while j<@mMaxX
         @mWindow.setpos(i,j)        
         if draw_snake(j,i)==true
-            @mWindow.addstr("*")
+          @mWindow.addstr("*")
         elsif draw_fruit(j,i)==true
           @mWindow.addstr("#")
         end
@@ -125,6 +145,7 @@ class Map
   end
   
   def fruit_eaten(x = 0, y = 0)
+    srand
     @mFruits.each do |f|
       if f.get_x == x && f.get_y == y
         f.teleport(rand(@mMaxX),rand(@mMaxY-2)+1)
@@ -135,20 +156,21 @@ class Map
   def move
         lastScore = @mScore
         @mSnake.move(@mMaxX,@mMaxY-1)
+        if @mSnake.collision
+          exit_snake("YOU LOSE! ".+(print_header),"movement") 
+        end
         if @mFruitsPresent > 0
           @mFruits.each do |f|
             h = @mSnake.get_head_position
             if h.get_x == f.get_x && h.get_y == f.get_y
               if @mSnake.eat_fruit
-                exit_snake("YOU WIN!","movement")
+                exit_snake("YOU WIN! ".+(print_header),"movement")
               end
               fruit_eaten(f.get_x,f.get_y)
               @mScore+=5  
               break
             end
           end
-        elsif @mSnake.collision
-          exit_snake("YOU LOSE!","movement") 
         end
         unless (@mScore - lastScore) == 5
           @mScore+=1
@@ -162,27 +184,37 @@ class Map
     e2 = (d == 0 || d == 2)
     case Curses.getch
       when 'a'
-        if e1
+        if e1 && !changed
           @mDir = 0
           changed = true
         end
       when 'w'
-        if e2
+        if e2 && !changed
           @mDir = 1
           changed = true
         end
       when 'd'
-        if e1  
+        if e1 && !changed 
           @mDir = 2
           changed = true
         end
       when 's'
-        if e2
+        if e2 && !changed
           @mDir = 3
           changed = true
         end
       when 'q'
-        exit_snake("You press (Q)uit button","turn")
+        exit_snake("You pressed (Q)uit button","turn")
+      when 'p'
+        if @paused == false
+          @mThreads["pause"] = Thread.new { thread_pause }
+          @mThreads["map"].kill
+          @paused = true
+        else
+          @mThreads["pause"].kill
+          @mThreads["map"] = Thread.new { thread_map }
+          @paused = false
+        end
     end
     changed
   end
@@ -195,6 +227,17 @@ class Map
         end
       }
       sleep(@speed)
+    end
+  end
+  
+  def thread_pause()
+    loop do
+      clear_win
+      @mWindow.box("|", "-") # border
+      cy=(@mMaxY/2).to_i; cx=((@mMaxX/2).to_i)-3
+      @mWindow.setpos(cy,cx)
+      @mWindow.addstr("PAUSE")
+      sleep(1)  
     end
   end
   
