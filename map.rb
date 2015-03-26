@@ -32,7 +32,7 @@ class Map
       @paused = false
     end
     
-  def end
+  def end?
       @mEnd
   end
   
@@ -116,7 +116,7 @@ class Map
       while j<@mMaxX
         @mWindow.setpos(i,j)        
         if draw_snake(j,i)==true
-          @mWindow.addstr("*")
+          @mWindow.addstr("@")
         elsif draw_fruit(j,i)==true
           @mWindow.addstr("#")
         end
@@ -140,7 +140,7 @@ class Map
         print_map
         move
       }
-      sleep(@speed)
+      sleep(@speed/100)
     end
   end
   
@@ -157,14 +157,13 @@ class Map
         lastScore = @mScore
         @mSnake.move(@mMaxX,@mMaxY-1)
         if @mSnake.collision
-          exit_snake("YOU LOSE! ".+(print_header),"movement") 
+          exit_snake("YOU LOSE! ".+(print_header),"map") 
         end
         if @mFruitsPresent > 0
-          @mFruits.each do |f|
-            h = @mSnake.get_head_position
-            if h.get_x == f.get_x && h.get_y == f.get_y
+          @mFruits.each do |f|            
+            if @mSnake.is_head_in(f.get_x,f.get_y)
               if @mSnake.eat_fruit
-                exit_snake("YOU WIN! ".+(print_header),"movement")
+                exit_snake("YOU WIN! ".+(print_header),"map")
               end
               fruit_eaten(f.get_x,f.get_y)
               @mScore+=5  
@@ -226,7 +225,7 @@ class Map
           @mSnake.set_direction(@mDir)
         end
       }
-      sleep(@speed)
+      sleep(@speed/100)
     end
   end
   

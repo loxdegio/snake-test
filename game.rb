@@ -18,7 +18,7 @@ begin
   
   game = Map.new
 
-  while !game.end 
+  while !game.end? 
   end
   
   ensure

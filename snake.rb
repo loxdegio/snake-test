@@ -57,14 +57,15 @@ class Snake
   def collision
     l = @length-1
     i = 0
-    while i<l
-      if @points[i].get_x == @points[l].get_x && @points[i].get_y == @points[l].get_y
-        return true
-        break
-      end
+    while i<l && is_head_in(@points[i].get_x,@points[i].get_y) == false
       i+=1
     end
-    return false
+    return !(i==l) 
+  end
+  
+  def is_head_in( x=0, y=0 )
+    h = @points[@length-1]
+    return ( h.get_x == x && h.get_y == y )
   end
   
   private 
@@ -73,7 +74,7 @@ class Snake
       l=@length
       @length+=1
       if l == @@maxLength
-        rc = true
+        return true
       else
         p=Array.new(@length)
         i=0
@@ -84,7 +85,7 @@ class Snake
         @points=p
         @points[l]=Point.new(@points[l-1].get_x+@points[l-1].get_dx,@points[l-1].get_y+@points[l-1].get_dy,@points[l-1].get_dx,@points[l-1].get_dy)
       end
-      return rc
+      return false
     end
 
     def set_next_move(dx = 0, dy = 0)
